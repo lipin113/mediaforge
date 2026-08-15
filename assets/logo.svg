@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="120" height="120" viewBox="0 0 120 120" role="img" aria-label="MediaForge">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#2f80ed"/>
+      <stop offset="1" stop-color="#1e5fd0"/>
+    </linearGradient>
+  </defs>
+  <rect x="6" y="6" width="108" height="108" rx="28" fill="url(#bg)"/>
+  <g fill="none" stroke="#ffffff" stroke-width="7.5" stroke-linecap="round" stroke-linejoin="round" transform="translate(20 20) scale(1.25)">
+    <path d="M14 39c0-10 8-18 18-18h7c7 0 13 6 13 13s-6 13-13 13H26"/>
+    <path d="M18 25 32 11l14 14"/>
+    <path d="M22 36h24"/>
+  </g>
+</svg>

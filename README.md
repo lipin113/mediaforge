@@ -1,6 +1,8 @@
 <div align="center">
 
-# 🎬 MediaForge
+<img src="assets/logo.svg" alt="MediaForge" width="120" height="120">
+
+# MediaForge
 
 **多网盘 · 全自动媒体整理引擎**
 
