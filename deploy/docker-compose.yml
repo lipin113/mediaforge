@@ -23,10 +23,10 @@ services:
         for t in "${FSM_MEDIA_HOST_PATH:?set FSM_MEDIA_HOST_PATH in .env}" "${FSM_STRM_HOST_PATH:?set FSM_STRM_HOST_PATH in .env}"; do
           nsenter -t 1 -m -- sh -lc '
             set -eu
-            mkdir -p "$1"
-            grep -F " $1 " /proc/self/mountinfo >/dev/null 2>&1 || mount --bind "$1" "$1"
-            mount --make-rshared "$1"
-          ' sh "$t"
+            mkdir -p "$$1"
+            grep -F " $$1 " /proc/self/mountinfo >/dev/null 2>&1 || mount --bind "$$1" "$$1"
+            mount --make-rshared "$$1"
+          ' sh "$$t"
         done
     restart: "no"
 
