@@ -20,13 +20,31 @@ done
 [ -n "$DOCKER" ] || die "未找到 docker。请先在 NAS 套件中心安装 Container Manager / Container Station / Docker。"
 log "docker: $DOCKER"
 
-# 2) 探测 NAS 的 docker 共享文件夹(界面可见)。找到第一个存在的父目录。
+# 2) 确定数据根目录。
+#    优先用户手动指定 MF_ROOT(兜底任何 NAS/任何版本);否则自动探测各家 docker 共享文件夹。
+#    候选覆盖:群晖/绿联(/volume1)、铁威马TOS6(/Volume1/User)、铁威马其它(/Volume1)、飞牛(/vol1/1000)、威联通(/share)。
 BASE=""
-for c in /volume1/docker /vol1/1000/docker /share/Container /share/Docker /volume2/docker; do
-  parent="$(dirname "$c")"
-  if [ -d "$parent" ]; then BASE="$c"; break; fi
-done
-[ -n "$BASE" ] || die "未找到 NAS 数据卷(试过 /volume1 /vol1/1000 /share 等)。请把你的 docker 共享文件夹路径告诉作者。"
+# 手动指定路径:位置参数 $1 优先(curl ... | sudo bash -s -- /你的docker路径),其次 MF_ROOT 环境变量
+MANUAL="${1:-${MF_ROOT:-}}"
+if [ -n "$MANUAL" ]; then
+  [ -d "$MANUAL" ] || die "你指定的路径 $MANUAL 不存在,请检查(要填 File Station 里能看到的共享文件夹真实路径)。"
+  BASE="$MANUAL"
+  log "使用手动指定路径: $BASE"
+else
+  CANDS="/volume1/docker /Volume1/User/docker /Volume1/docker /vol1/1000/docker /share/Container /share/Docker /volume2/docker /Volume2/User/docker"
+  # 先找已存在的 docker 目录
+  for c in $CANDS; do
+    if [ -d "$c" ]; then BASE="$c"; break; fi
+  done
+  # 没有现成的,就找父目录(共享文件夹根)存在的
+  if [ -z "$BASE" ]; then
+    for c in $CANDS; do
+      if [ -d "$(dirname "$c")" ]; then BASE="$c"; break; fi
+    done
+  fi
+  [ -n "$BASE" ] || die "未能自动识别你的 NAS 数据卷。请手动指定路径重试(换成你 File Station 里能看到的共享文件夹真实路径):
+    curl -fsSL https://cdn.jsdelivr.net/gh/lipin113/mediaforge@main/deploy/install-nas.sh | sudo bash -s -- /你的共享文件夹/docker"
+fi
 ROOT="$BASE/mediaforge"
 MEDIA="$ROOT/media"; STRM="$ROOT/strm"; DATA="$ROOT/data"
 ENVF="$ROOT/mediaforge.env"
