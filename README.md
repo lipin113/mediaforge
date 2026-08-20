@@ -50,17 +50,23 @@ MediaForge 是**事件驱动**的：网盘里新增/改动了哪个文件，就�
 
 ## 🚀 快速开始
 
-MediaForge 通过 Docker 部署（支持 Linux / NAS / Docker）。
+SSH 登录你的机器，用 **root**（或 sudo）执行一条命令即可全自动安装（拉镜像/取二进制 → 建目录 → 生成密钥 → 启动 + 开机自启）。
+
+**NAS / Docker 一键安装**（群晖 / 飞牛 / 威联通 / 绿联 / 铁威马，自动识别路径，装在 File Station 可见目录）：
 
 ```bash
-# 1. 准备目录 + .env（详见文档）
-cp .env.example .env
-
-# 2. 启动（推荐 Compose，挂载功能完整）
-docker compose up -d
+curl -fsSL https://cdn.jsdelivr.net/gh/lipin113/mediaforge@main/deploy/install-nas.sh | sudo bash
 ```
 
-访问 `http://宿主机IP:7860` 打开 Web 管理界面，用邮箱注册/登录后即可添加网盘、开启自动流程。
+**Linux 原生一键安装**（普通服务器，不装 Docker，直接跑原生二进制）：
+
+```bash
+curl -fsSL https://cdn.jsdelivr.net/gh/lipin113/mediaforge@main/deploy/install-native.sh | sudo bash
+```
+
+跑完会打印访问地址。浏览器打开 `http://你的IP:7860`，用邮箱注册/登录后即可添加网盘、开启自动流程。
+
+> 若 `cdn.jsdelivr.net` 慢，把命令里的地址换成 `https://raw.githubusercontent.com/lipin113/mediaforge/main/deploy/install-nas.sh`（或 `install-native.sh`）。
 
 > 📖 完整安装、镜像拉取、逐项配置见 [**安装部署**](https://github.com/lipin113/mediaforge/wiki/Installation) 与 [**快速上手**](https://github.com/lipin113/mediaforge/wiki/Quick-Start)。
 
