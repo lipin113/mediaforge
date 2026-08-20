@@ -76,15 +76,15 @@ EOF
 fi
 
 # 4.5) 端口占用检测(7860/17860 被别的程序占会导致容器反复重启)
+# ★grep -c 数到0会返回失败退出码,set -e 下必须用 || true 兜住,否则脚本静默退出(飞牛干净机踩过)
+portbusy(){ { ss -ltn 2>/dev/null || netstat -ltn 2>/dev/null; } | grep -c ":$1 " || true; }
 for port in 7860 17860; do
-  if command -v ss >/dev/null 2>&1; then busy=$(ss -ltn "sport = :$port" 2>/dev/null | grep -c ":$port")
-  else busy=$(netstat -ltn 2>/dev/null | grep -c ":$port ")||true; fi
+  busy=$(portbusy "$port")
   # 排除本程序自己占用(重装场景):先停掉旧的同名容器再判断
   if [ "${busy:-0}" -gt 0 ]; then
     "$DOCKER" rm -f "$NAME" >/dev/null 2>&1 || true
     sleep 1
-    if command -v ss >/dev/null 2>&1; then busy=$(ss -ltn "sport = :$port" 2>/dev/null | grep -c ":$port")
-    else busy=$(netstat -ltn 2>/dev/null | grep -c ":$port ")||true; fi
+    busy=$(portbusy "$port")
     [ "${busy:-0}" -gt 0 ] && die "端口 $port 已被其它程序占用,请先释放它(或停掉占用它的容器/服务)再重试。"
   fi
 done
