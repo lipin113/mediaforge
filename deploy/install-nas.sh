@@ -47,9 +47,12 @@ else
 fi
 ROOT="$BASE/mediaforge"
 MEDIA="$ROOT/media"; STRM="$ROOT/strm"; DATA="$ROOT/data"
-ENVF="$ROOT/mediaforge.env"
 log "数据目录: $ROOT (File Station 里可见)"
 mkdir -p "$MEDIA" "$STRM" "$DATA"
+# 密钥文件候选位置:密钥仅通过 docker run -e 传入容器,该文件只是宿主机侧持久化以便重装复用,
+# 放哪都行只要能写。飞牛(fnOS)等 NAS 的共享文件夹根目录可能拒绝 root 建普通文件(EPERM),
+# 故备多个候选,后面按"已存在优先、否则第一个可写"来选,绕开该坑。
+ENV_CANDS="$ROOT/mediaforge.env $DATA/mediaforge.env /usr/local/etc/mediaforge.env /root/.mediaforge.env /etc/mediaforge.env"
 
 # 3) 挂载传播(FUSE 挂载在宿主机可见需要 rshared)
 for t in "$MEDIA" "$STRM"; do
@@ -60,19 +63,41 @@ log "挂载传播已就绪"
 
 # 4) 密钥:首次生成随机,已存在则复用
 gen(){ head -c 32 /dev/urandom | od -An -tx1 | tr -d ' \n'; }
-if [ -f "$ENVF" ]; then
+
+# 4.1) 先在所有候选位置找已有密钥文件复用(重装场景:密钥必须保持不变,否则旧数据解不开)
+ENVF=""
+for c in $ENV_CANDS; do
+  if [ -f "$c" ]; then ENVF="$c"; break; fi
+done
+if [ -n "$ENVF" ]; then
   log "复用已有密钥 ($ENVF)"
   # shellcheck disable=SC1090
   . "$ENVF"
 else
+  # 4.2) 首次安装:挑第一个"真能写"的候选位置(试写探测)。飞牛共享文件夹根拒建文件时自动跳到下一个。
   log "首次安装,生成随机密钥..."
+  chattr -i "$ROOT" 2>/dev/null || true   # 若共享文件夹被加了 immutable 属性,先尝试解除
+  ENVF=""
+  for c in $ENV_CANDS; do
+    d=$(dirname "$c")
+    mkdir -p "$d" 2>/dev/null || continue
+    if ( : > "$c" ) 2>/dev/null; then ENVF="$c"; break; fi   # 试写成功即选它
+  done
+  [ -n "$ENVF" ] || die "找不到可写位置保存密钥文件(已试:$ENV_CANDS)。
+    你的 NAS 可能限制了这些目录的写入。请手动指定一个能写的共享文件夹重装:
+    curl -fsSL https://cdn.jsdelivr.net/gh/lipin113/mediaforge@main/deploy/install-nas.sh | sudo bash -s -- /你能写的共享文件夹/docker"
   FSM_MASTER_KEY=$(gen); FSM_SESSION_SECRET=$(gen); FSM_PROXY_TOKEN=$(gen)
-  cat > "$ENVF" <<EOF
+  # 密钥落地失败绝不继续(否则会留个缺密钥的容器反复重启)
+  if ! cat > "$ENVF" <<EOF
 FSM_MASTER_KEY=$FSM_MASTER_KEY
 FSM_SESSION_SECRET=$FSM_SESSION_SECRET
 FSM_PROXY_TOKEN=$FSM_PROXY_TOKEN
 EOF
-  chmod 600 "$ENVF"
+  then
+    die "密钥文件写入失败 ($ENVF)。请换一个能写的共享文件夹重装(见上条命令的 -s -- 用法)。"
+  fi
+  chmod 600 "$ENVF" 2>/dev/null || true
+  log "密钥已保存: $ENVF"
 fi
 
 # 4.5) 端口占用检测(7860/17860 被别的程序占会导致容器反复重启)
