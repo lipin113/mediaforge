@@ -129,9 +129,13 @@ log "启动容器..."
   -e FSM_PROXY_TOKEN="$FSM_PROXY_TOKEN" \
   -e FSM_MOUNT_HOST_PATH_PREFIX="$MEDIA" \
   -e FSM_MOUNT_RUNTIME_PATH_PREFIX=/mnt/media \
+  -e FSM_STRM_HOST_PATH="$STRM" \
+  -e FSM_STRM_CONTAINER_PATH=/strm \
+  -e FSM_LOCALFS_BROWSE_ROOT=/hostfs \
   -v "$DATA":/app/data \
   -v "$MEDIA":/mnt/media:rshared \
   -v "$STRM":/strm \
+  -v /:/hostfs:ro \
   "$IMAGE"
 
 # 6) 冒烟

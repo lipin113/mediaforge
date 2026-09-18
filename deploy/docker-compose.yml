@@ -56,6 +56,11 @@ services:
       FSM_MOUNT_CACHE_DIR: /app/data/cache
       FSM_MOUNT_HOST_PATH_PREFIX: ${FSM_MEDIA_HOST_PATH:?set FSM_MEDIA_HOST_PATH in .env}
       FSM_MOUNT_RUNTIME_PATH_PREFIX: ${FSM_MEDIA_CONTAINER_PATH:-/mnt/media}
+      # STRM 宿主机↔容器前缀:接进程序,Web 填 STRM 宿主机真实路径也能翻成容器可写路径。
+      FSM_STRM_HOST_PATH: ${FSM_STRM_HOST_PATH:?set FSM_STRM_HOST_PATH in .env}
+      FSM_STRM_CONTAINER_PATH: ${FSM_STRM_CONTAINER_PATH:-/strm}
+      # 本地路径浏览器的宿主机根只读挂载点(配合下方 /:/hostfs:ro)。填路径时可从 NAS 真实根浏览。
+      FSM_LOCALFS_BROWSE_ROOT: ${FSM_LOCALFS_BROWSE_ROOT:-/hostfs}
       FSM_DOCKER_HAIRPIN_FIX_ENABLED: ${FSM_DOCKER_HAIRPIN_FIX_ENABLED:-true}
     volumes:
       - ${FSM_DATA_HOST_PATH:-./data}:/app/data
@@ -69,3 +74,10 @@ services:
       - type: bind
         source: ${FSM_STRM_HOST_PATH:?set FSM_STRM_HOST_PATH in .env}
         target: ${FSM_STRM_CONTAINER_PATH:-/strm}
+
+      # 本地路径浏览器:把宿主机根只读挂进容器,Web 填路径时可从 NAS 真实根 / 浏览点选。
+      # 只读(ro)+ 默认传播(不是 rshared,与媒体挂载的传播互不影响,不碰重启 exit128 那条线)。
+      - type: bind
+        source: /
+        target: ${FSM_LOCALFS_BROWSE_ROOT:-/hostfs}
+        read_only: true
